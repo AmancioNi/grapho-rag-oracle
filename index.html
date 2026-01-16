@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CineGen AI - Intelligence Dashboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- 3D Force Graph -->
+  <script src="https://unpkg.com/three@0.159.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.159.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+
+  <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body class="bg-black text-zinc-100 h-screen flex">
+
+  <aside class="w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col z-50 h-full shrink-0">
+    <div class="p-6 flex items-center gap-3">
+      <div class="bg-red-600 p-2 rounded-lg shadow-lg shadow-red-900/20">
+        <i data-lucide="film" class="text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight">CineGen AI</h1>
+        <p class="text-[10px] text-zinc-500 uppercase tracking-tighter">Enterprise Cinema</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-2">
+      <button onclick="switchTab('catalog')" id="btn-catalog" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-red-500 bg-red-600/10 border border-red-900/50">
+        <i data-lucide="clapperboard" size="18"></i>
+        <span class="font-medium text-sm">Catálogo</span>
+      </button>
+
+      <button onclick="switchTab('vector')" id="btn-vector" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="sparkles" size="18"></i>
+        <span class="font-medium text-sm">Busca IA</span>
+      </button>
+
+      <button onclick="switchTab('customers')" id="btn-customers" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="users" size="18"></i>
+        <span class="font-medium text-sm">Clientes</span>
+      </button>
+
+      <button onclick="switchTab('watched')" id="btn-watched" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="eye" size="18"></i>
+        <span class="font-medium text-sm">Meus Filmes</span>
+      </button>
+
+      <button onclick="switchTab('graph')" id="btn-graph" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="share-2" size="18"></i>
+        <span class="font-medium text-sm">Grafo 2D</span>
+      </button>
+
+      <button onclick="switchTab('compare')" id="btn-compare" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="git-compare" size="18"></i>
+        <span class="font-medium text-sm">Comparar</span>
+      </button>
+
+      <button onclick="switchTab('network3d')" id="btn-network3d" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="network" size="18"></i>
+        <span class="font-medium text-sm">Network 3D</span>
+      </button>
+
+      <button onclick="switchTab('chat')" id="btn-chat" 
+        class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <i data-lucide="message-square" size="18"></i>
+        <span class="font-medium text-sm">CineBot IA</span>
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-zinc-900">
+      <div class="bg-zinc-900/40 rounded-xl p-3 flex items-center gap-3 border border-zinc-800/50">
+        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div class="text-[10px]">
+          <p class="text-white font-medium">Motor de Recomendação</p>
+          <p class="text-zinc-500" id="sidebar-status">Verificando...</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+
+  <main class="flex-1 h-screen overflow-hidden p-4 relative">
+    <div class="bg-zinc-900/30 rounded-2xl border border-zinc-800/50 h-full backdrop-blur-md overflow-hidden relative shadow-2xl">
+      
+      <!-- VIEW: CATALOG -->
+      <section id="view-catalog" class="view-section p-8 overflow-y-auto custom-scroll fade-in">
+        <header class="flex justify-between items-end mb-6">
+          <div>
+            <h2 class="text-3xl font-bold text-white tracking-tight">Catálogo Geral</h2>
+            <p class="text-zinc-500 mt-1">Acervo disponível para processamento e recomendação.</p>
+          </div>
+          <div class="flex gap-2">
+            <span class="px-3 py-1 bg-zinc-800 rounded-full text-[10px] text-zinc-400 border border-zinc-700">
+              FILMES: <span id="movie-count">0</span>
+            </span>
+          </div>
+        </header>
+
+        <div class="mb-6 relative">
+          <input 
+            type="text" 
+            id="catalog-search-input"
+            placeholder="Buscar por título ou descrição..."
+            onkeyup="handleCatalogSearch(event)"
+            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-5 pl-12 pr-24 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500/50">
+          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"></i>
+          <button 
+            id="catalog-clear-search"
+            onclick="clearCatalogSearch()" 
+            class="hidden absolute right-2 top-1/2 -translate-y-1/2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors">
+            Limpar
+          </button>
+        </div>
+        
+        <div id="catalog-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
+          <div class="col-span-full text-center py-20">
+            <div class="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-zinc-500 text-sm">Carregando catálogo...</p>
+          </div>
+        </div>
+
+        <div class="pb-10">
+          <button id="catalog-loadmore"
+            onclick="loadMoreCatalog()"
+            class="hidden w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white py-3 rounded-xl transition-colors font-medium text-sm">
+            Carregar mais filmes
+          </button>
+        </div>
+      </section>
+
+      <!-- VIEW: VECTOR SEARCH -->
+      <section id="view-vector" class="view-section hidden p-8 overflow-y-auto custom-scroll fade-in">
+        <div class="max-w-4xl mx-auto w-full pt-12">
+          <div class="text-center mb-10">
+            <h2 class="text-4xl font-extrabold text-white mb-4">Busca Semântica</h2>
+            <p class="text-zinc-500">Descreva um sentimento ou conceito e nossa IA encontrará o filme ideal.</p>
+          </div>
+          
+          <form onsubmit="handleVectorSearch(event)" class="relative mb-8">
+            <input 
+              type="text" 
+              id="vector-input"
+              placeholder="Ex: Filmes sobre solidão em cidades futuristas..." 
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-5 px-6 pl-14 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 shadow-2xl">
+            <i data-lucide="search" class="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500" size="24"></i>
+            <button type="submit"
+              class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all">
+              Processar
+            </button>
+          </form>
+          
+          <div id="vector-results" class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
+            <div class="col-span-full text-center py-20 opacity-20">
+              <i data-lucide="sparkles" class="mx-auto mb-4 w-16 h-16"></i>
+              <p class="text-zinc-600">Aguardando consulta semântica...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: CUSTOMERS -->
+      <section id="view-customers" class="view-section hidden p-8 overflow-y-auto custom-scroll fade-in">
+        <h2 class="text-3xl font-bold mb-2">Gestão de Base de Usuários</h2>
+        <p class="text-zinc-500 mb-8">Cadastre e gerencie perfis de clientes para recomendações personalizadas.</p>
+        
+        <div class="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 mb-8">
+          <h3 class="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Novo Cliente</h3>
+
+          <form onsubmit="handleCreateCustomer(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input 
+              type="text" 
+              id="customer-firstname" 
+              placeholder="Nome" 
+              required
+              class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500">
+            <input 
+              type="text" 
+              id="customer-lastname" 
+              placeholder="Sobrenome" 
+              required
+              class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500">
+
+            <input 
+              type="email" 
+              id="customer-email" 
+              placeholder="Email" 
+              required
+              class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500">
+
+            <button type="submit"
+              class="bg-zinc-100 text-black px-8 rounded-xl font-bold hover:bg-white transition-colors">
+              Adicionar
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 mb-8">
+          <h3 class="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Selecionar Perfil Ativo</h3>
+          <select 
+            id="customer-select" 
+            onchange="selectCustomer()"
+            class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500">
+            <option value="">Escolha um cliente...</option>
+          </select>
+          <div id="selected-info" class="hidden mt-4 p-4 bg-indigo-900/10 border border-indigo-800/50 rounded-xl">
+            <div class="flex items-center gap-3">
+              <i data-lucide="check-circle" class="text-indigo-400"></i>
+              <div>
+                <p class="text-white font-medium text-sm">Cliente Ativo</p>
+                <p class="text-indigo-300 text-xs" id="selected-name"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Base Cadastrada</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="customers-list">
+            <div class="col-span-full text-center py-10 text-zinc-500">Carregando...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: WATCHED MOVIES -->
+      <section id="view-watched" class="view-section hidden p-8 overflow-y-auto custom-scroll fade-in">
+        <header class="mb-8">
+          <h2 class="text-3xl font-bold text-white tracking-tight mb-2">Histórico de Visualizações</h2>
+          <div class="flex items-center gap-2">
+            <p class="text-zinc-500">Filmes assistidos sincronizados com o Property Graph</p>
+            <span class="px-2 py-0.5 bg-purple-900/20 text-purple-400 text-[9px] font-bold rounded uppercase border border-purple-800/50">
+              Synced
+            </span>
+          </div>
+        </header>
+
+        <div id="watched-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div class="col-span-full text-center py-20 text-zinc-500">
+            <i data-lucide="user-x" class="w-16 h-16 mx-auto mb-4 opacity-20"></i>
+            <p>Selecione um cliente para ver o histórico</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: GRAPH 2D -->
+      <section id="view-graph" class="view-section hidden p-8 overflow-y-auto custom-scroll fade-in">
+        <header class="mb-6">
+          <h2 class="text-3xl font-bold text-white tracking-tight">Grafo de Conexões</h2>
+          <p class="text-zinc-500 mt-1">Visualize relações entre clientes e filmes</p>
+        </header>
+
+        <div class="max-w-6xl mx-auto space-y-6">
+          <div id="graph-customers-buttons" class="flex flex-wrap gap-3">
+            <div class="text-zinc-500 text-sm">Carregando clientes...</div>
+          </div>
+
+          <div id="graph-display" class="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-8 min-h-[300px] flex items-center justify-center">
+            <p class="text-zinc-600 flex items-center gap-2 italic">
+              <i data-lucide="mouse-pointer-2"></i> Selecione um cliente
+            </p>
+          </div>
+
+          <div id="recommendations-display" class="hidden">
+            <h3 class="text-lg font-bold text-white mb-4">Recomendações Baseadas no Grafo</h3>
+            <div id="recommendations-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: COMPARE -->
+      <section id="view-compare" class="view-section hidden p-8 overflow-y-auto custom-scroll fade-in">
+        <header class="mb-6">
+          <h2 class="text-3xl font-bold text-white tracking-tight">Comparar Usuários</h2>
+          <p class="text-zinc-500 mt-1">Visualize conexões e descubra padrões de consumo compartilhados</p>
+        </header>
+
+        <div class="max-w-6xl mx-auto space-y-6">
+          <div class="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-zinc-400 mb-2">Cliente 1</label>
+                <select id="compare-customer1" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none">
+                  <option value="">Carregando...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-zinc-400 mb-2">Cliente 2</label>
+                <select id="compare-customer2" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none">
+                  <option value="">Carregando...</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="compareCustomers()"
+              class="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors">
+              Comparar Perfis
+            </button>
+          </div>
+
+          <div id="compare-result" class="hidden"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: NETWORK 3D -->
+      <section id="view-network3d" class="view-section hidden p-8 overflow-y-auto custom-scroll fade-in">
+        <header class="mb-6">
+          <h2 class="text-3xl font-bold text-white tracking-tight">Network Graph 3D</h2>
+          <p class="text-zinc-500 mt-1">Visualização tridimensional das conexões do Property Graph</p>
+        </header>
+
+        <div class="space-y-4">
+          <div class="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div>
+                <label class="block text-xs text-zinc-400 mb-2">Cliente</label>
+                <select id="network3d-customer" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none">
+                  <option value="">Carregando...</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs text-zinc-400 mb-2">Profundidade</label>
+                <select id="network3d-depth" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none">
+                  <option value="1">1 (leve)</option>
+                  <option value="2" selected>2 (padrão)</option>
+                  <option value="3">3 (pesado)</option>
+                </select>
+              </div>
+
+              <div class="flex gap-2">
+                <button onclick="load3DGraphFromUI()" class="flex-1 bg-red-600 hover:bg-red-700 px-4 py-3 rounded-xl text-white transition-colors text-sm font-bold">
+                  <i data-lucide="play" class="w-4 h-4 inline"></i> Carregar
+                </button>
+                <button onclick="zoom3D(0.85)" class="bg-zinc-900 hover:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-800 text-white transition-colors text-sm">
+                  <i data-lucide="zoom-in" class="w-4 h-4 inline"></i>
+                </button>
+                <button onclick="zoom3D(1.15)" class="bg-zinc-900 hover:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-800 text-white transition-colors text-sm">
+                  <i data-lucide="zoom-out" class="w-4 h-4 inline"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative">
+            <div id="graph-3d-container" class="border border-zinc-800"></div>
+
+            <div class="graph-legend">
+              <div class="text-xs font-bold text-white mb-2">Legenda</div>
+              <div class="space-y-1 text-xs">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full" style="background:#6366f1"></div>
+                  <span class="text-zinc-300">Cliente Principal</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full" style="background:#a855f7"></div>
+                  <span class="text-zinc-300">Clientes Similares</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full" style="background:#ef4444"></div>
+                  <span class="text-zinc-300">Filmes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="graph-stats" class="grid grid-cols-3 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: CHAT -->
+      <section id="view-chat" class="view-section hidden bg-zinc-950/20 fade-in">
+        <div class="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-6" id="chat-messages">
+          <div class="bg-zinc-900/80 border border-zinc-800 p-5 rounded-2xl rounded-tl-none max-w-[70%]">
+            <p class="text-sm leading-relaxed">👋 Olá! Sou o <strong>CineBot</strong>. Posso analisar preferências e sugerir filmes baseados no Property Graph.</p>
+            <p class="text-xs text-zinc-500 mt-3">Experimente perguntar:</p>
+            <ul class="text-xs text-zinc-500 mt-2 space-y-1 ml-4">
+              <li>• "Me recomende um filme"</li>
+              <li>• "Quero algo de ficção científica"</li>
+              <li>• "Filmes parecidos com Inception"</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="p-6 border-t border-zinc-800 bg-zinc-950/50">
+          <form onsubmit="handleChatSubmit(event)" class="max-w-4xl mx-auto relative">
+            <input 
+              type="text" 
+              id="chat-input"
+              placeholder="Digite sua mensagem..." 
+              class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 pr-14 outline-none focus:ring-1 focus:ring-red-500 text-white">
+            <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-400 p-2 transition-colors">
+              <i data-lucide="send" size="20"></i>
+            </button>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL: TRAILER -->
+  <div id="trailer-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center" onclick="closeTrailerModal(event)">
+    <div class="absolute inset-0 bg-black/95 backdrop-blur-sm"></div>
+    <div class="relative z-10 w-full max-w-5xl mx-4" onclick="event.stopPropagation()">
+      <div class="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl">
+        <div class="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h3 id="trailer-title" class="text-lg font-bold text-white">Trailer</h3>
+          <button onclick="closeTrailerModal()" class="text-zinc-400 hover:text-white transition-colors p-2 hover:bg-zinc-800 rounded-lg">
+            <i data-lucide="x" size="20"></i>
+          </button>
+        </div>
+        <div class="relative bg-black" style="padding-bottom: 56.25%; height: 0;">
+          <iframe 
+            id="trailer-iframe" 
+            class="absolute top-0 left-0 w-full h-full"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="watch-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center" onclick="closeWatchModal(event)">
+    <div class="absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
+    <div class="relative z-10 w-full max-w-md mx-4" onclick="event.stopPropagation()">
+      <div class="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl p-6">
+        <h3 class="text-xl font-bold text-white mb-2">Marcar como Assistido</h3>
+        <p class="text-zinc-400 text-sm mb-4">Selecione o cliente que assistiu este filme</p>
+        <div id="watch-customers-list" class="space-y-2 mb-4 max-h-64 overflow-y-auto custom-scroll"></div>
+        <button onclick="closeWatchModal()" 
+          class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-xl transition-colors font-medium">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="src/scripts.js"></script>
+</body>
+</html>
