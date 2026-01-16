@@ -39,7 +39,7 @@ Fique à vontade para explorar o código e os exemplos práticos fornecidos!
 
 https://docs.oracle.com/en/database/oracle/property-graph/22.4/spgdg/what-are-property-graphs.html#GUID-9BA44355-E97D-4E7A-81AA-269873E506B2
 
-## Laboratorios Praticos:
+## Laboratórios Práticos:
 
 https://livelabs.oracle.com/ords/r/dbpm/livelabs/view-workshop?wid=770&clear=RR,180&session=112935373307967
 https://livelabs.oracle.com/ords/r/dbpm/livelabs/run-workshop?p210_wid=3711&p210_wec=&session=112935373307967
